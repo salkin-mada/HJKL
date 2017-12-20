@@ -6,6 +6,7 @@ antal agnd: 20 (caps to analog pins) + 20 (to analog knobs) = 40
 */
 
 #include <LedDisplay.h>
+#include <Bounce2.h>
 
 // led display pins:
 #define dataPin 13            // the display's data in
@@ -15,6 +16,8 @@ antal agnd: 20 (caps to analog pins) + 20 (to analog knobs) = 40
 #define reset 33              // the display's reset pin
 // led display settings
 #define displayLength 8       // number of characters
+#define TRUE 1
+#define FALSE 0
 int displayBrightness;        // screen brightness
 // start an instance of the LED display library:
 LedDisplay myDisplay = LedDisplay(dataPin, registerSelect, clockPin,
@@ -58,6 +61,8 @@ int digitalPinsForPageSellection[] = {
     10,11,12,24
 };
 
+Bounce debouncer[ numDigitalPinsForPageSellection + numDigitalPins ] = {Bounce()}; //deboucing
+
 
 /*
 // page leds -> digital pins:
@@ -80,8 +85,11 @@ int pageDependentControlChangeNumberOffset = 0;
 int midiPitch[] = {
     36,37,38,39,40,41,42,43,44,45
 };
+bool p_sel[numDigitalPinsForPageSellection] = {FALSE};
 
 void setup() {
+   /*  ~~~ ~~~ ~~~ init config BEGIN ~~~ ~~~ ~~~
+       ~~~ ~~~ ~~~ ~~~ ~~~   ~~~ ~~~ ~~~ ~~~ ~~~   */
     // Serial.begin(19200);
 
     // Pullup for button pins
@@ -93,10 +101,71 @@ void setup() {
         pinMode (digitalPinsForPageSellection[i], INPUT_PULLUP);
     }
 
+    // debounce setup
+    for (int i = 0; i < (numDigitalPinsForPageSellection + numDigitalPins); ++i) {
+        if (i < numDigitalPinsForPageSellection) {
+            debouncer[i].attach(digitalPinsForPageSellection[i]);
+            debouncer[i].interval(5);
+        }
+        if (i >= numDigitalPinsForPageSellection && i < (numDigitalPinsForPageSellection + numDigitalPins))
+        debouncer[i].attach(digitalPinsForPageSellection[i]);
+        debouncer[i].interval(5);
+    }
+
+
     // initialize the display library:
     myDisplay.begin();
     // check the display version
     // Serial.println(myDisplay.version(), DEC);
+    
+    // check if page select buttons are pressed during boot up
+    for (int i = 0; i < numDigitalPinsForPageSellection; i++) {
+        if(digitalRead(digitalPinsForPageSellection[i]) == 0) {
+            p_sel[i] = TRUE;
+        }
+    }
+    /*  ~~~ ~~~ ~~~ init config DONE ~~~ ~~~ ~~~
+       ~~~ ~~~ ~~~ ~~~ ~~~   ~~~ ~~~ ~~~ ~~~ ~~~   */
+
+    // if all is pressed, load/goto secondary modus
+    if (p_sel[0] == TRUE && p_sel[1] == TRUE && p_sel[2] == TRUE && p_sel[3] == TRUE) {
+        myDisplay.clear();
+        myDisplay.setCursor(1);
+        myDisplay.print("second");
+        for (int i = 0; i < 1; i++) {
+            //fade up
+            for (displayBrightness = 0; displayBrightness < 16; displayBrightness++) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(100);
+            }
+            // zigzag top
+            for (displayBrightness = 15; displayBrightness > 8; displayBrightness--) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(22);
+            }
+            for (displayBrightness = 8; displayBrightness < 16; displayBrightness++) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(22);
+            }
+            for (displayBrightness = 15; displayBrightness > 8; displayBrightness--) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(22);
+            }
+            for (displayBrightness = 8; displayBrightness < 16; displayBrightness++) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(22);
+            }
+            // fade down
+            for (displayBrightness = 15; displayBrightness >= 0; displayBrightness--) {
+                myDisplay.setBrightness(displayBrightness);
+                delay(100);
+            }
+        }
+        // clear display
+        myDisplay.clear();
+        delay(500);
+    }
+    
 
 
     // setup led display start_up
@@ -171,9 +240,11 @@ void updateDisplay() {
 }
 
 void loop() {
+
     // handle page sellection
     for (int i = 0; i < numDigitalPinsForPageSellection; i++) {
-        if (digitalRead(digitalPinsForPageSellection[i]) == 0) {
+        debouncer[i].update();
+        if (debouncer[i].read() == 0) {
             if (currentSellectedPage != i) {
                 currentSellectedPage = i;
                 // PAGE for midi pitch value- / control change number offset
@@ -196,26 +267,27 @@ void loop() {
 
         // digital buttons - midi noteOn / noteOff
         for (int i = 0; i < numDigitalPins; i++) {
-            if (digitalRead(digitalPins[i]) == 0  && currentDigitalVal[i] == 1) {
+            debouncer[i].update();
+            if (debouncer[i+numDigitalPinsForPageSellection].read() == 0  && currentDigitalVal[i] == 1) {
                 usbMIDI.sendNoteOn(
                     midiPitch[i]+pageDependentMidiPitchOffset, 100, channel
                 );
                 currentDigitalVal[i] = 0; // flag
 
-                myDisplay.setBrightness(10);
+                myDisplay.setBrightness(2);
 
                 // Serial.print("button on digitalpin: ");
                 // Serial.print(digitalPins[i]);
                 // Serial.print(" pressed - midi noteOn: ");
                 // Serial.println(midiPitch[i]+pageDependentMidiPitchOffset);
             }
-            if (digitalRead(digitalPins[i]) == 1 && currentDigitalVal[i] == 0) {
+            if (debouncer[i+numDigitalPinsForPageSellection].read() == 1 && currentDigitalVal[i] == 0) {
                 usbMIDI.sendNoteOff(
                     midiPitch[i]+pageDependentMidiPitchOffset, 100, channel
                 );
                 currentDigitalVal[i] = 1; // flag
 
-                myDisplay.setBrightness(6);
+                myDisplay.setBrightness(8);
 
                 // Serial.print("button on digitalpin: ");
                 // Serial.print(digitalPins[i]);
