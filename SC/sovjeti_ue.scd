@@ -8,6 +8,12 @@ fork{
 		});
 		s.sync;
 
+
+		if(topEnvironment.includesKey('birds'), {
+			topEnvironment.at('birds').free;
+		});
+		s.sync;
+
 		if(topEnvironment.includesKey('frogs'), {
 			topEnvironment.at('frogs').free;
 		});
@@ -33,6 +39,11 @@ fork{
 		});
 		s.sync;
 
+		if(topEnvironment.includesKey('fish'), {
+			topEnvironment.at('fish').free;
+		});
+		s.sync;
+
 		if(topEnvironment.includesKey('sdr_trak'), {
 			topEnvironment.at('sdr_trak').free;
 		});
@@ -51,6 +62,11 @@ fork{
 		// populate buffers
 		topEnvironment.put(
 			'filee', Buffer.read(s, "X:/lydfiler/TREE_KNIRK.wav")
+		);
+		s.sync;
+
+		topEnvironment.put(
+			'birds', Buffer.read(s, "X:/salkin mada nature/tannatemplodebirdpitch.wav")
 		);
 		s.sync;
 
@@ -74,9 +90,13 @@ fork{
 		);
 		s.sync;
 
-
 		topEnvironment.put(
 			'snappa', Buffer.read(s, "X:/lydfiler/0002 1-Audio_c1.wav")
+		);
+		s.sync;
+
+		topEnvironment.put(
+			'fish', Buffer.read(s, "X:/lydfiler/insekt 1-Audio_c1_remove_silence.wav");
 		);
 		s.sync;
 
@@ -233,40 +253,30 @@ fork{
 	}).playN([0,1]);
 
 	// rad 5
-	~nono={|r=3,f=5,d=1|2**LFNoise0.kr(1!d,r)*f};
-	Ndef(\albo, {
-		var sig, mod, play, envamp, envgenamp, envfreq, envgenfreq, sum, trekker, snd;
-		var dur = Ndef.kr('/midi/cc_5').linexp(0,127,0.01,6);
-		var spd = Ndef.kr('/midi/cc_10').linlin(0,127,0.09,5.0);
-		var pls = Ndef.kr('/midi/cc_15').linexp(0,127,0.01,100);
-		var amp = Ndef.kr('/midi/cc_20').linlin(0,127,0.0,1.0);
+	Ndef(\albo, {arg bufnum, numChannels;
+		var sig, mod, play1, play2, play3, env;
+		var cut = Ndef.kr('/midi/cc_5');
+		var pdisp = Ndef.kr('/midi/cc_10').linlin(0,127,0.01,100.0).lag;
+		var pos = Ndef.kr('/midi/cc_15').linlin(0,127,-1.0,1.0).lag;
+		var amp = Ndef.kr('/midi/cc_20').linlin(0,127,0.0,4.0).lag;
 		var switch = Ndef.kr('/midi/button_10');
 
+		bufnum = topEnvironment['birds'].bufnum;
+		numChannels = topEnvironment['birds'].numChannels;
 
-		var chng=LFNoise0.kr(0.5!6).abs;
-		var freqskew = SinOsc.ar(0.4).range(100, 3000);
-		var freqinit = LFNoise0.ar(1).range(80, 5000);
-		var freq, freqenv, ampenv, freqenvctl, ampenvctl, t_gate;
-		t_gate = Impulse.kr(spd);
-		freqenv = Env([0.8, 1, 0.3, 0], [0.15, 0.6, 0.25], 'sine');
-		ampenv = Env([0, 1, 0.7, 1, 0], [0.25, 0.35, 0.15, 0.25], 'sine');
-		freq = EnvGen.kr(freqenv, t_gate, freqskew, freqinit, dur);
-		snd = SawDPW.ar(
-			freq*LFNoise1.ar(1!5).abs,
-			0,
-			EnvGen.kr(ampenv, t_gate, 0.8, 0, dur, 0)
-		);
-		snd = DFM1.ar(snd, freqinit.lag);
-		snd = Splay.ar(snd);
-		snd = DFM1.ar(snd, freq);
-
-		sig = snd.clip(-0.99,0.99);
+		sig=PlayBuf.ar(
+			numChannels,
+			bufnum,
+			BufRateScale.kr(bufnum)*cut.linexp(0,127,0.2,1).lag,
+			switch, loop: 1);
+		sig = LinXFade2.ar(sig, PitchShift.ar(sig, 1.0, 30.6, pdisp, 30, 1.3), pos);
+		sig = Splay.ar(sig*2);
+		sig = DFM1.ar(sig, cut.linexp(0,127,2000,22e3).lag);
+		sig = CompanderD.ar(sig, 0.6, 1, 1/3);
 		sig = sig*amp.lag;
 		sig = sig * ToggleFF.ar(Trig.ar(switch)).lag;
-		sum = CompanderD.ar(sig,0.5,1,1/3);
-		sum = Limiter.ar(sig, 0.99, 0.00001);
-		sum = sum.flat;
-		LeakDC.ar(sum);
+		sig = sig.flat;
+		LeakDC.ar(sig);
 
 	}).playN([0,1]);
 
@@ -482,7 +492,7 @@ fork{
 		var sig, mod, play1, play2, play3, env;
 		var cut = Ndef.kr('/midi/cc_41').linexp(0,127,20,22e3).lag;
 		var res = Ndef.kr('/midi/cc_46').linlin(0,127,0.01,1.0).lag;
-		var drop = Ndef.kr('/midi/cc_51').linlin(0,127,0.01,39.0).lag;
+		var pos = Ndef.kr('/midi/cc_51').linlin(0,127,-1.0,1.0).lag;
 		var amp = Ndef.kr('/midi/cc_56').linlin(0,127,0.0,1.0).lag;
 		var switch = Ndef.kr('/midi/button_26');
 
@@ -494,7 +504,8 @@ fork{
 			bufnum,
 			BufRateScale.kr(bufnum),
 			switch, loop: 1);
-		sig = WaveLoss.ar(sig, drop, 60);
+		sig = LinXFade2.ar(sig, PitchShift.ar(sig, 0.2, 1, 6), pos);
+		sig = Splay.ar(sig);
 		sig = DFM1.ar(sig, cut, res);
 		sig = sig + (LPF.ar(sig, 120)*2.5);
 		sig = sig*amp.lag;
@@ -529,9 +540,9 @@ fork{
 	// rad 3
 	Ndef(\sdr_rytme, {arg bufnum, numChannels;
 		var sig, mod, play1, play2, play3, env;
-		//var rate = Ndef.kr('/midi/cc_43').linlin(0,127,0.01,2.0);
-		//var trspeed = Ndef.kr('/midi/cc_48').linlin(0,127,0.0,5.0);
-		//var moth = Ndef.kr('/midi/cc_53').linlin(0,127,0.0,1.0);
+		var cut = Ndef.kr('/midi/cc_43').linexp(0,127,20,22e3).lag;
+		var res = Ndef.kr('/midi/cc_48').linlin(0,127,0.01,1.0).lag;
+		var pos = Ndef.kr('/midi/cc_53').linlin(0,127,-1.0,1.0).lag;
 		var amp = Ndef.kr('/midi/cc_58').linlin(0,127,0.0,1.0);
 		var switch = Ndef.kr('/midi/button_28');
 
@@ -543,6 +554,9 @@ fork{
 			bufnum,
 			BufRateScale.kr(bufnum)*0.8,
 			switch, loop: 1);
+		sig = LinXFade2.ar(sig, PitchShift.ar(sig, 0.8, 0.6, 6), pos);
+		sig = Splay.ar(sig);
+		sig = DFM1.ar(sig, cut, res);
 		sig = sig + (LPF.ar(sig, 120)*1.5);
 		sig = sig*amp.lag;
 		sig = sig * ToggleFF.ar(Trig.ar(switch)).lag;
@@ -550,9 +564,47 @@ fork{
 		LeakDC.ar(sig);
 	}).playN([0,1]);
 
+	// rad 4
+	Ndef(\insekto, {arg bufnum, numChannels;
+		var sig, mod, play1, play2, play3, env;
+		var rate = Ndef.kr('/midi/cc_44').linexp(0,127,0.01,2.0).lag;
+		var trspeed = Ndef.kr('/midi/cc_49').linlin(0,127,0.0,5.0);
+		var moth = Ndef.kr('/midi/cc_54').linlin(0,127,0.0,1.0);
+		var amp = Ndef.kr('/midi/cc_59').linlin(0,127,0.0,0.8);
+		var switch = Ndef.kr('/midi/button_29');
 
+		var startPos=Phasor.kr(1, 1, moth, 1, 0)*BufFrames.kr(bufnum);
+		var trigger= Impulse.kr(1.4);
+		bufnum = topEnvironment['fish'].bufnum;
+		numChannels = topEnvironment['fish'].numChannels;
 
+		play1=PlayBufCF.ar(
+			numChannels,
+			bufnum,
+			BufRateScale.kr(bufnum)*rate,
+			Impulse.kr(trspeed),//trigger,
+			startPos, loop:1, lag: 0.3) * 4;
+		play2=PlayBufCF.ar(
+			numChannels,
+			bufnum,
+			BufRateScale.kr(bufnum)*rate * 0.95,
+			Impulse.kr(trspeed),//trigger,
+			startPos, loop:1, lag: 0.3) * 4;
+		play3=PlayBufCF.ar(
+			numChannels,
+			bufnum,
+			BufRateScale.kr(bufnum)*rate * 0.9,
+			Impulse.kr(trspeed),//trigger,
+			startPos, loop:1, lag: 0.3) * 4;
 
+		sig=(play1+play2+play3)*0.7;
+		sig = DFM1.ar(sig, rate.linexp(0.01,2.0,1000,17e3), 0.08);
+		//sig=sig.clip(-0.99,0.99);
+		sig = sig*amp.lag;
+		sig = sig * ToggleFF.ar(Trig.ar(switch)).lag;
+		sig = sig.flat;
+		LeakDC.ar(sig);
+	}).playN([0,1]);
 
 
 
