@@ -2,18 +2,20 @@
 #include "button.h"
 #include "knob.h"
 /* #include "data.h" */
-/* #include "display.h" */
 #include <LedDisplay.h>
 #include "settings.h"
 #include <array>
 /* #include "usb_midi.h" */
 #include "midi.h"
+#include "display.h"
 /* extern usb_midi_class usbMIDI; */
-/* Midi midi; */
+/* #include "usb_desc.h" */
 
 constexpr bool DEBUG = false;
 
 using namespace hjkl;
+
+Midi midi(MIDIMODE::_14BIT);
 
 constexpr int num_knobs = 20;
 
@@ -26,15 +28,20 @@ int midi_mode_max;
 
 /* Data<num_pages, num_knobs> data; */
 /* Display<num_pages, num_knobs> display(settings, data); */
-/* Display display; */
-constexpr int dataPin = 13;         // the display's data in
-constexpr int registerSelect = 25;  // the display's register select pin
-constexpr int clockPin = 26;        // the display's clock pin
-constexpr int enable = 32;          // the display's chip enable pin
-constexpr int reset = 33;           // the display's reset pin
-constexpr int displayLength = 8;    // number of characters
-LedDisplay display = LedDisplay(dataPin, registerSelect, clockPin,
-enable, reset, displayLength);
+/* Display display = Display(13,25,26,32,33,8); */
+/* Display display = LedDisplay(13,25,26,32,33,8); */
+Display display(13,25,26,32,33,8);
+/* std::array<Display, 1> displays{Display(13,25,26,32,33,8)}; */
+/* Display<13,25,26,32,33,8> display; */
+/* LedDisplay Display(13,25,26,32,33,8); */
+/* constexpr int dataPin = 13;         // the display's data in */
+/* constexpr int registerSelect = 25;  // the display's register select pin */
+/* constexpr int clockPin = 26;        // the display's clock pin */
+/* constexpr int enable = 32;          // the display's chip enable pin */
+/* constexpr int reset = 33;           // the display's reset pin */
+/* constexpr int displayLength = 8;    // number of characters */
+/* LedDisplay display = LedDisplay(dataPin, registerSelect, clockPin, */
+/* enable, reset, displayLength); */
 
 // Initialize knobs
 /* typedef std::array<int, 1> KnobPin; */
@@ -94,8 +101,6 @@ Button(24, debounce, 13)  // nvim <C-e> aka evaluate
 };
 
 void setup() {
-    /* start usb */
-    /* usbMIDI.begin(); */
 
     /* resolution */
     analogReadResolution(14); // 13 max recommend baby
@@ -103,17 +108,29 @@ void setup() {
     /* smooth input values */
     analogReadAveraging(32); // 16 virkede
 
-    display.begin();
-    display.clear();
-    display.setBrightness(10);
-    for (auto i=0; i<20; i++) {
-        display.setCursor(0);
-        display.print(gen_random(8));
-        delay(100);
-    }
+    display.setup();
+    display.welcome(MIDIMODE::_14BIT);
+    /* display.begin(); */
+    /* display.clear(); */
+    /* display.setBrightness(10); */
+    /* for (auto i=0; i<20; i++) { */
+    /*     display.setCursor(0); */
+    /*     display.print(gen_random(8)); */
+    /*     delay(100); */
+    /* } */
+
+    if (DEBUG) {
+        while (!Serial);
+        Serial.println("DEBUG MODE");
+        for (size_t b = 0; b < buttons.size(); b++) {
+            Serial.print(b);
+            buttons[b].setup(ButtonAction::Print, ButtonAction::Nothing);
+        }
+        Serial.println();
+    } else {
 
         // Lower buttons
-        for (auto b = 0; b < (buttons.size()-num_special_buttons); b++) {
+        for (size_t b = 0; b < (buttons.size()-num_special_buttons); b++) {
             buttons[b].setup(ButtonAction::SendNoteOn, ButtonAction::SendNoteOff);
         }
         // Upper buttons
@@ -121,48 +138,79 @@ void setup() {
         buttons[11].setup(ButtonAction::PitchPageUp, ButtonAction::Nothing);
         buttons[12].setup(ButtonAction::Nothing, ButtonAction::FuncSwitch);
         buttons[13].setup(ButtonAction::Eval, ButtonAction::Nothing);
-    if (DEBUG) {
-        // set baudrate?
-        while (!Serial) {}
-        Serial.println("DEBUG MODE");
-        for (auto b = 0; b < (buttons.size()); b++) {
-            buttons[b].setup(ButtonAction::Print, ButtonAction::Nothing);
-        }
 
+        keyboard_state = keyboard_func;
     }
-    /* display.setup(); */
+
+    display.after_boot(5);
 }
 
 void readButtons() {
-    for (auto btn = 0; btn < buttons.size(); btn++) {
+    for (size_t btn = 0; btn < buttons.size(); btn++) {
         buttons[btn].read();
     }
-    if (DEBUG) {
-        for (auto btn = 0; btn < buttons.size(); btn++) {
-            /* buttons[btn].print(); */
-        }
-    }
+    /* if (DEBUG) { */
+    /*     for (size_t btn = 0; btn < buttons.size(); btn++) { */
+    /*         buttons[btn].print(); */
+    /*     } */
+    /* } */
 }
 
 void readKnobs() {
-    for (auto knb = 0; knb < knobs.size(); knb++) {
+    for (size_t knb = 0; knb < knobs.size(); knb++) {
         knobs[knb].read();
     }
     if (DEBUG) {
-        for (auto knb = 0; knb < knobs.size(); knb++) {
-        /* knobs[knb].print(); */
+        for (size_t knb = 0; knb < knobs.size(); knb++) {
+            /* knobs[knb].print(); */
         }
     }
 }
 
+void midi_btns() {
+    for (size_t b = 0; b < (buttons.size()-num_special_buttons); b++) {
+        buttons[b].setup(ButtonAction::SendNoteOn, ButtonAction::SendNoteOff);
+    }
+}
+void keyboard_btns() {
+    buttons[0].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[1].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[2].setup(ButtonAction::K, ButtonAction::Nothing);
+    /* buttons[2].setup(ButtonAction::K, ButtonAction::K_RELEASE); */
+    buttons[3].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[4].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[5].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[6].setup(ButtonAction::H, ButtonAction::Nothing);
+    buttons[7].setup(ButtonAction::J, ButtonAction::Nothing);
+    buttons[8].setup(ButtonAction::L, ButtonAction::Nothing);
+    /* buttons[6].setup(ButtonAction::H, ButtonAction::H_RELEASE); */
+    /* buttons[7].setup(ButtonAction::J, ButtonAction::J_RELEASE); */
+    /* buttons[8].setup(ButtonAction::L, ButtonAction::L_RELEASE); */
+    buttons[9].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+}
+
+elapsedMillis msec = 0;
 void loop() {
+    if(keyboard_state != keyboard_func) {
+        if(keyboard_func) {
+            keyboard_btns();
+        } else {
+            midi_btns();
+        }
+        keyboard_state = keyboard_func;
+
+        String info = "HJKL";
+        if(keyboard_func) {info=".|\\~";};
+        display.update(info, 10);
+    };
+    /* if(msec >= 50) {String info = "HJKL"; if(keyboard_func){info=".|\\~";}; display.update(info, 10); msec = 0; }; */
     readKnobs();
     readButtons();
+    midi.discardIncomingMIDI();
+
     if (DEBUG) {
         delay(50);
         /* display.setCursor(0); */
         /* display.print(gen_random(8)); */
     }
-    /* midi.discardIncomingMIDI(); */
-    /* while (usbMIDI.read()); // read and discard any incoming MIDI messages */
 }

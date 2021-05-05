@@ -1,5 +1,5 @@
-#ifndef GLOBALS
-#define GLOBALS
+#ifndef SATANGLOBALS
+#define SATANGLOBALS
 #pragma once
 
 #include <Arduino.h>
@@ -10,6 +10,8 @@ enum class MIDIMODE { _7BIT, _14BIT };
 int channel = 1;
 
 int pitchPage = 4; // init button midi note pitches 40-50
+bool keyboard_func = false;
+bool keyboard_state;
 
 constexpr int num_buttons = 14;
 constexpr int num_special_buttons = 4;

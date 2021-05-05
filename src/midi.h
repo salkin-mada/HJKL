@@ -1,5 +1,5 @@
-#ifndef MIDI
-#define MIDI
+#ifndef SATANMIDI
+#define SATANMIDI
 #pragma once
 
 #include "globals.h"
@@ -31,10 +31,6 @@ Midi(MIDIMODE initmode) : mode(initmode){
 void init() { changeMidiMode(mode); }
 
 /* void setup() { usbMIDI.begin(); } */
-
-/* void discardIncomingMIDI() { */
-/*     while (usbMIDI.read()); // read and discard any incoming MIDI messages */
-/*     }; */
 
 void sendCC(int value, int knob_num, int channel) {
     ccNum = knob_num;
@@ -71,6 +67,10 @@ void changeMidiMode(MIDIMODE newmode) {
             maxMIDIvalue = 16383;
             break;
     }
+}
+
+void discardIncomingMIDI() {
+    while (usbMIDI.read()); // read and discard any incoming MIDI messages
 }
 
 private:

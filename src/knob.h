@@ -1,10 +1,11 @@
-#ifndef KNOB
-#define KNOB
+#ifndef SATANKNOB
+#define SATANKNOB
 #pragma once
 
 #include <Arduino.h>
 #include <ResponsiveAnalogRead.h>
 #include "midi.h"
+/* #include "display.h" */
 
 namespace hjkl {
 /*
@@ -19,6 +20,7 @@ int pin;
 /* int number; */
 /* }; */
 
+/* Display display(13,25,26,32,33,8); */
 /* ResponsiveAnalogRead knob = ResponsiveAnalogRead(); */
 ResponsiveAnalogRead knob;
 Midi midi;
@@ -49,10 +51,12 @@ void read() {
         /* analogVal_14_bit[0] = knob.getValue() << 1; */
         /* Serial.println(knob.getValue() << 1); */
         /* value = (knob.getValue() << 1); */
+        // do the real 14 bit res on ADC.. a bit nois though
         value = knob.getValue();
         midi.sendCC(value, number, channel);
         /* Serial.println(knob.getValue()); */
         /* Serial.println(value); */
+        /* display.update(); */
     }
 }
 
