@@ -15,16 +15,14 @@ enum class ButtonAction {
     Nothing,
     FuncSwitch,
     H,
-    H_RELEASE,
     J,
-    J_RELEASE,
     K,
-    K_RELEASE,
     L,
-    L_RELEASE,
-    Eval,
-    PitchPageUp,
-    PitchPageDown,
+    PAGE_UP,
+    PAGE_DOWN,
+    EVAL,
+    PitchUp,
+    PitchDown,
     SendNoteOn,
     SendNoteOff,
     Print
@@ -139,32 +137,27 @@ void performAction(ButtonAction doit) {
             Keyboard.press(KEY_H);
             Keyboard.release(KEY_H);
             break;
-        case ButtonAction::H_RELEASE:
-            Keyboard.release(KEY_H);
-            break;
         case ButtonAction::J:
             Keyboard.press(KEY_J);
-            Keyboard.release(KEY_J);
-            break;
-        case ButtonAction::J_RELEASE:
             Keyboard.release(KEY_J);
             break;
         case ButtonAction::K:
             Keyboard.press(KEY_K);
             Keyboard.release(KEY_K);
             break;
-        case ButtonAction::K_RELEASE:
-            Keyboard.release(KEY_K);
-            break;
         case ButtonAction::L:
             Keyboard.press(KEY_L);
             Keyboard.release(KEY_L);
             break;
-        case ButtonAction::L_RELEASE:
-            Keyboard.release(KEY_L);
+        case ButtonAction::PAGE_UP:
+            Keyboard.press(KEY_PAGE_UP);
+            Keyboard.release(KEY_PAGE_UP);
             break;
-
-        case ButtonAction::Eval:
+        case ButtonAction::PAGE_DOWN:
+            Keyboard.press(KEY_PAGE_DOWN);
+            Keyboard.release(KEY_PAGE_DOWN);
+            break;
+        case ButtonAction::EVAL:
             Keyboard.set_modifier(MODIFIERKEY_CTRL);
             /* Keyboard.set_key1(KEY_E); */
             Keyboard.send_now();
@@ -176,30 +169,25 @@ void performAction(ButtonAction doit) {
             /* //Keyboard.press(); */
             /* //Keyboard.release(); */
             break;
-
-        case ButtonAction::PitchPageUp:
+        case ButtonAction::PitchUp:
             pitchPage++;
             /* //Keyboard.press(); */
             /* //Keyboard.release(); */
             break;
-
-        case ButtonAction::PitchPageDown:
+        case ButtonAction::PitchDown:
             pitchPage--;
             /* //Keyboard.press(); */
             /* //Keyboard.release(); */
             break;
-
         case ButtonAction::SendNoteOn:
             usbMIDI.sendNoteOn(calculate_midi_note(buttonNumber, pitchPage, num_buttons-num_special_buttons), 127, channel);
             /* usbMIDI.sendNoteOn(36, 127, channel); */
             /* midi.noteOn(36, 127, channel); */
             break;
-
         case ButtonAction::SendNoteOff:
             usbMIDI.sendNoteOff(calculate_midi_note(buttonNumber, pitchPage, num_buttons-num_special_buttons), 127, channel);
             /* midi.noteOff(36, 127, channel); */
             break;
-
         case ButtonAction::Print:
             print();
             break;

@@ -106,7 +106,7 @@ void setup() {
     analogReadResolution(14); // 13 max recommend baby
 
     /* smooth input values */
-    analogReadAveraging(32); // 16 virkede
+    analogReadAveraging(32); // 16 virker fint med 13BIT ADC
 
     display.setup();
     display.welcome(MIDIMODE::_14BIT);
@@ -128,16 +128,16 @@ void setup() {
         }
         Serial.println();
     } else {
-
+        // INIT BUTTON SETUP
         // Lower buttons
         for (size_t b = 0; b < (buttons.size()-num_special_buttons); b++) {
             buttons[b].setup(ButtonAction::SendNoteOn, ButtonAction::SendNoteOff);
         }
         // Upper buttons
-        buttons[10].setup(ButtonAction::PitchPageDown, ButtonAction::Nothing);
-        buttons[11].setup(ButtonAction::PitchPageUp, ButtonAction::Nothing);
+        buttons[10].setup(ButtonAction::PitchDown, ButtonAction::Nothing);
+        buttons[11].setup(ButtonAction::PitchUp, ButtonAction::Nothing);
         buttons[12].setup(ButtonAction::Nothing, ButtonAction::FuncSwitch);
-        buttons[13].setup(ButtonAction::Eval, ButtonAction::Nothing);
+        buttons[13].setup(ButtonAction::EVAL, ButtonAction::Nothing);
 
         keyboard_state = keyboard_func;
     }
@@ -171,22 +171,22 @@ void midi_btns() {
     for (size_t b = 0; b < (buttons.size()-num_special_buttons); b++) {
         buttons[b].setup(ButtonAction::SendNoteOn, ButtonAction::SendNoteOff);
     }
+    buttons[10].setup(ButtonAction::PitchDown, ButtonAction::Nothing);
+    buttons[11].setup(ButtonAction::PitchUp, ButtonAction::Nothing);
 }
 void keyboard_btns() {
     buttons[0].setup(ButtonAction::Nothing, ButtonAction::Nothing);
     buttons[1].setup(ButtonAction::Nothing, ButtonAction::Nothing);
     buttons[2].setup(ButtonAction::K, ButtonAction::Nothing);
-    /* buttons[2].setup(ButtonAction::K, ButtonAction::K_RELEASE); */
     buttons[3].setup(ButtonAction::Nothing, ButtonAction::Nothing);
     buttons[4].setup(ButtonAction::Nothing, ButtonAction::Nothing);
     buttons[5].setup(ButtonAction::Nothing, ButtonAction::Nothing);
     buttons[6].setup(ButtonAction::H, ButtonAction::Nothing);
     buttons[7].setup(ButtonAction::J, ButtonAction::Nothing);
     buttons[8].setup(ButtonAction::L, ButtonAction::Nothing);
-    /* buttons[6].setup(ButtonAction::H, ButtonAction::H_RELEASE); */
-    /* buttons[7].setup(ButtonAction::J, ButtonAction::J_RELEASE); */
-    /* buttons[8].setup(ButtonAction::L, ButtonAction::L_RELEASE); */
     buttons[9].setup(ButtonAction::Nothing, ButtonAction::Nothing);
+    buttons[10].setup(ButtonAction::PAGE_DOWN, ButtonAction::Nothing);
+    buttons[11].setup(ButtonAction::PAGE_UP, ButtonAction::Nothing);
 }
 
 elapsedMillis msec = 0;
